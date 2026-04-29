@@ -434,15 +434,45 @@ position: sticky; top: 0; background: var(–bg); z-index: 100;
 <div class="modal-section">Statement Period</div>
 <div class="form-row-2">
 <div class="field">
-<label>Opens (day of month)</label>
+<label>Opens</label>
+<select id="mStmtOpenMonth">
+<option value="">— any month —</option>
+<option value="0">January</option>
+<option value="1">February</option>
+<option value="2">March</option>
+<option value="3">April</option>
+<option value="4">May</option>
+<option value="5">June</option>
+<option value="6">July</option>
+<option value="7">August</option>
+<option value="8">September</option>
+<option value="9">October</option>
+<option value="10">November</option>
+<option value="11">December</option>
+</select>
 <input type="number" id="mStmtOpen" placeholder="e.g. 1" min="1" max="31" />
 </div>
 <div class="field">
-<label>Closes (day of month)</label>
+<label>Closes</label>
+<select id="mStmtCloseMonth">
+<option value="">— any month —</option>
+<option value="0">January</option>
+<option value="1">February</option>
+<option value="2">March</option>
+<option value="3">April</option>
+<option value="4">May</option>
+<option value="5">June</option>
+<option value="6">July</option>
+<option value="7">August</option>
+<option value="8">September</option>
+<option value="9">October</option>
+<option value="10">November</option>
+<option value="11">December</option>
+</select>
 <input type="number" id="mStmtClose" placeholder="e.g. 28" min="1" max="31" />
 </div>
 </div>
-<p class="hint">Enter the day numbers when your billing cycle opens and closes (e.g. opens 5th, closes 4th).</p>
+<p class="hint">Optionally pick a month and day for each boundary. Leave month blank to let the tracker auto-detect the current cycle.</p>
 <div class="modal-btns">
 <button class="btn-danger" id="mDeleteBtn" style="display:none" onclick="deleteCard()">Delete Card</button>
 <button class="btn-cancel" onclick="closeModal()">Cancel</button>
@@ -549,6 +579,32 @@ function stmtInfo(card) {
   const today = new Date();
 
   today.setHours(0,0,0,0);
+
+  if (card.stmtOpenMonth != null && card.stmtCloseMonth != null) {
+
+    const y = today.getFullYear();
+
+    for (let yr = y; yr <= y + 1; yr++) {
+
+      const openDate  = new Date(yr, card.stmtOpenMonth, card.stmtOpen);
+
+      const closeDate = new Date(yr + (card.stmtCloseMonth < card.stmtOpenMonth ? 1 : 0), card.stmtCloseMonth, card.stmtClose);
+
+      if (closeDate >= today) {
+
+        const daysLeft = Math.max(0, Math.round((closeDate - today) / 86400000));
+
+        const fmt = d => `${MONTHS[d.getMonth()].slice(0,3)} ${d.getDate()}`;
+
+        return { openStr: fmt(openDate), closeStr: fmt(closeDate), daysLeft, closingSoon: daysLeft <= 5 };
+
+      }
+
+    }
+
+    return null;
+
+  }
 
   const y = today.getFullYear(), m = today.getMonth();
 
@@ -961,6 +1017,10 @@ function openAddCard() {
 
   document.getElementById('mBudget').value    = '';
 
+  document.getElementById('mStmtOpenMonth').value  = '';
+
+  document.getElementById('mStmtCloseMonth').value = '';
+
   document.getElementById('mStmtOpen').value  = '';
 
   document.getElementById('mStmtClose').value = '';
@@ -994,6 +1054,10 @@ function openEditCard(id) {
   document.getElementById('mStmtOpen').value  = card.stmtOpen  || '';
 
   document.getElementById('mStmtClose').value = card.stmtClose || '';
+
+  document.getElementById('mStmtOpenMonth').value  = card.stmtOpenMonth  != null ? card.stmtOpenMonth  : '';
+
+  document.getElementById('mStmtCloseMonth').value = card.stmtCloseMonth != null ? card.stmtCloseMonth : '';
 
   document.getElementById('mDeleteBtn').style.display = '';
 
@@ -1033,15 +1097,19 @@ function saveCard() {
 
   const stmtClose = parseInt(document.getElementById('mStmtClose').value) || null;
 
+  const stmtOpenMonth  = (v => v !== '' ? parseInt(v) : null)(document.getElementById('mStmtOpenMonth').value);
+
+  const stmtCloseMonth = (v => v !== '' ? parseInt(v) : null)(document.getElementById('mStmtCloseMonth').value);
+
   if (editingCardId) {
 
     const card = cardById(editingCardId);
 
-    if (card) Object.assign(card, { name, last4, color: selectedColor, budget, stmtOpen, stmtClose });
+    if (card) Object.assign(card, { name, last4, color: selectedColor, budget, stmtOpen, stmtClose, stmtOpenMonth, stmtCloseMonth });
 
   } else {
 
-    state.cards.push({ id: uid(), name, last4, color: selectedColor, budget, stmtOpen, stmtClose });
+    state.cards.push({ id: uid(), name, last4, color: selectedColor, budget, stmtOpen, stmtClose, stmtOpenMonth, stmtCloseMonth });
 
   }
 
